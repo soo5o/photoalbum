@@ -3,6 +3,8 @@ package com.squarecross.photoalbum.domain;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import java.util.Date;
+import java.util.List;
+
 @Entity
 @Table(name="album", schema="photo_album", uniqueConstraints = {@UniqueConstraint(columnNames = "album_id")})
 public class Album {
@@ -40,4 +42,6 @@ public class Album {
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "album", cascade = CascadeType.ALL)
+    private List<Photo> photos;
 }
