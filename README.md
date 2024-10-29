@@ -1,1 +1,1 @@
-[ ] checkbox
+-[ ] checkbox
