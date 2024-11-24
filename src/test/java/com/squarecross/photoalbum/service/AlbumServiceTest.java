@@ -1,7 +1,9 @@
 package com.squarecross.photoalbum.service;
 
+import com.squarecross.photoalbum.Constants;
 import com.squarecross.photoalbum.domain.Photo;
 import com.squarecross.photoalbum.dto.AlbumDto;
+import com.squarecross.photoalbum.mapper.AlbumMapper;
 import com.squarecross.photoalbum.repository.PhotoRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -10,6 +12,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.squarecross.photoalbum.domain.Album;
 import com.squarecross.photoalbum.repository.AlbumRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
@@ -84,5 +92,33 @@ class AlbumServiceTest {
         photo3.setAlbum(savedAlbum);
         photoRepository.save(photo3);
         assertEquals(3, albumService.getAlbum(savedAlbum.getAlbumId()).getCount());
+    }
+    @Test
+    void testAlbumCreate() throws IOException {
+        AlbumDto albumDto = new AlbumDto();
+        albumDto.setAlbumName("myTests");
+        AlbumDto createAlbumDto = albumService.createAlbum(albumDto);
+        AlbumDto albumName = albumService.getAlbumsByName("myTests");
+        assertEquals(createAlbumDto.getAlbumId(), albumName.getAlbumId());
+        Album album = AlbumMapper.convertToModel(createAlbumDto);
+        deleteAlbumDirectories(album);
+    }
+    private void deleteAlbumDirectories(Album album) throws IOException {
+        deleteDirectoryRecursively(Paths.get(Constants.PATH_PREFIX + "/photos/original/" + album.getAlbumId()));
+        deleteDirectoryRecursively(Paths.get(Constants.PATH_PREFIX + "/photos/thumb/" + album.getAlbumId()));
+    }
+
+    private void deleteDirectoryRecursively(Path directory) throws IOException {
+        if (Files.exists(directory)) {
+            Files.walk(directory)
+                    .sorted(Comparator.reverseOrder()) // 하위 파일 및 디렉토리를 먼저 삭제
+                    .forEach(path -> {
+                        try {
+                            Files.delete(path);
+                        } catch (IOException e) {
+                            throw new RuntimeException("Failed to delete " + path, e);
+                        }
+                    });
+        }
     }
 }
