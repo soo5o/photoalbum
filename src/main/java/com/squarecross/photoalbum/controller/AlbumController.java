@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.io.IOException;
+import java.util.List;
 
 @RestController   //Spring 에서 관리하는 Controller 이면서, Rest API 목적으로 사용함
 @RequestMapping("/albums")  //해당 컨트롤러가 처리할 URL 경로의 앞부분
@@ -23,6 +23,13 @@ public class AlbumController {
     public ResponseEntity<AlbumDto> createAlbum(@RequestBody final AlbumDto albumDto) throws IOException{
         AlbumDto savedAlbumDto = albumService.createAlbum(albumDto);
         return new ResponseEntity<>(savedAlbumDto, HttpStatus.OK);
+    }
+    @RequestMapping(value="", method = RequestMethod.GET)
+    public ResponseEntity<List<AlbumDto>> getAlbumList(@RequestParam(value="keyword", required=false, defaultValue="") final String keyword,
+                 @RequestParam(value="sort", required=false, defaultValue = "byDate") final String sort,
+                                                       @RequestParam(value="orderBy", required=false, defaultValue="") final String orderBy) {
+        List<AlbumDto> albumDtos = albumService.getAlbumList(keyword, sort, orderBy);
+        return new ResponseEntity<>(albumDtos, HttpStatus.OK);
     }
 }
 /*    @RequestMapping(value="/query", method = RequestMethod.GET)
