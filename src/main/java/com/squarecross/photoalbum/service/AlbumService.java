@@ -10,13 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import jakarta.persistence.EntityNotFoundException;
 import com.squarecross.photoalbum.dto.AlbumDto;
-
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -80,5 +78,41 @@ public class AlbumService {
             albumDto.setThumbUrls(top4.stream().map(Photo::getThumbUrl).map(c -> Constants.PATH_PREFIX + c).collect(Collectors.toList()));
         }
         return albumDtos;
+    }
+    public AlbumDto changeName(Long AlbumId, AlbumDto albumDto){
+        Optional<Album> album = this.albumRepository.findById(AlbumId);
+        if (album.isEmpty()){
+            throw new NoSuchElementException(String.format("Album ID '%d'가 존재하지 않습니다", AlbumId));
+        }
+        Album updateAlbum = album.get();
+        updateAlbum.setAlbumName(albumDto.getAlbumName());
+        Album savedAlbum = this.albumRepository.save(updateAlbum);
+        return AlbumMapper.convertToDto(savedAlbum);
+    }
+    public void deleteAlbum(Long AlbumId) throws IOException {
+        Optional<Album> optAlbum = this.albumRepository.findById(AlbumId);
+        if (optAlbum.isEmpty()){
+            throw new NoSuchElementException(String.format("Album ID '%d'가 존재하지 않습니다", AlbumId));
+        }
+        Album album = optAlbum.get();
+        this.albumRepository.deleteById(AlbumId);
+        this.deleteAlbumDirectories(album);
+    }
+    private void deleteAlbumDirectories(Album album) throws IOException{
+        deleteDirectoryRecursively(Paths.get(Constants.PATH_PREFIX + "/photos/original/" + album.getAlbumId()));
+        deleteDirectoryRecursively(Paths.get(Constants.PATH_PREFIX + "/photos/thumb/" + album.getAlbumId()));
+    }
+    private void deleteDirectoryRecursively(Path directory) throws IOException {
+        if (Files.exists(directory)) {
+            Files.walk(directory)
+                    .sorted(Comparator.reverseOrder()) // 하위 파일/디렉토리부터 삭제
+                    .forEach(path -> {
+                        try {
+                            Files.delete(path);
+                        } catch (IOException e) {
+                            throw new RuntimeException("파일 삭제 실패: " + path, e);
+                        }
+                    });
+        }
     }
 }

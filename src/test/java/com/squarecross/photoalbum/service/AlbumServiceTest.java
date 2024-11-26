@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -145,5 +146,41 @@ class AlbumServiceTest {
         assertEquals("aaaa", resName.get(0).getAlbumName()); // 0번째 Index가 두번째 앨범명 aaaa 인지 체크
         assertEquals("aaab", resName.get(1).getAlbumName()); // 1번째 Index가 두번째 앨범명 aaab 인지 체크
         assertEquals(2, resName.size()); // aaa 이름을 가진 다른 앨범이 없다는 가정하에, 검색 키워드에 해당하는 앨범 필터링 체크
+    }
+    @Test
+    void testChangeAlbumName() throws IOException {
+        //앨범 생성
+        AlbumDto albumDto = new AlbumDto();
+        albumDto.setAlbumName("변경전");
+        AlbumDto res = albumService.createAlbum(albumDto);
+
+        Long albumId = res.getAlbumId(); // 생성된 앨범 아이디 추출
+        AlbumDto updateDto = new AlbumDto();
+        updateDto.setAlbumName("변경후"); // 업데이트용 Dto 생성
+        albumService.changeName(albumId, updateDto);
+
+        AlbumDto updatedDto = albumService.getAlbum(albumId);
+
+        //앨범명 변경되었는지 확인
+        assertEquals("변경후", updatedDto.getAlbumName());
+    }
+    @Test
+    void testDeleteAlbum() throws IOException {
+        //앨범 생성
+        AlbumDto albumDto = new AlbumDto();
+        albumDto.setAlbumName("새로운 앨범");
+        AlbumDto res = albumService.createAlbum(albumDto);
+        AlbumDto albumName = albumService.getAlbumsByName("새로운 앨범");
+        Long albumId = res.getAlbumId(); // 생성된 앨범 아이디 추출
+        assertEquals(albumId, albumName.getAlbumId());
+        albumService.deleteAlbum(albumId);
+        NoSuchElementException exception = assertThrows(
+                NoSuchElementException.class,
+                () -> albumService.deleteAlbum(albumId)
+        );
+        assertEquals(
+                String.format("Album ID '%d'가 존재하지 않습니다", albumId),
+                exception.getMessage()
+        );
     }
 }

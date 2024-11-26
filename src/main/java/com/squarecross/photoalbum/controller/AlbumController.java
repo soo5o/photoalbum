@@ -31,6 +31,16 @@ public class AlbumController {
         List<AlbumDto> albumDtos = albumService.getAlbumList(keyword, sort, orderBy);
         return new ResponseEntity<>(albumDtos, HttpStatus.OK);
     }
+    @RequestMapping(value="/{albumId}", method = RequestMethod.PUT)
+    public ResponseEntity<AlbumDto> updateAlbum(@PathVariable("albumId") final long albumId, @RequestBody final AlbumDto albumDto){
+        AlbumDto res = albumService.changeName(albumId, albumDto);
+        return new ResponseEntity<>(res, HttpStatus.OK);
+    }
+    @RequestMapping(value="/{albumId}", method = RequestMethod.DELETE)
+    public ResponseEntity<Void> deleteAlbum(@PathVariable("albumId") final long albumId) throws IOException {
+        albumService.deleteAlbum(albumId);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
 }
 /*    @RequestMapping(value="/query", method = RequestMethod.GET)
     public ResponseEntity<AlbumDto> getAlbumByQuery(@RequestParam(value="album_id") final long album_id){
