@@ -9,7 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,5 +65,12 @@ public class PhotoController {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+    @RequestMapping(value="", method = RequestMethod.GET)
+    public ResponseEntity<List<PhotoDto>> getPhotoList(@RequestParam(value="keyword", required=false, defaultValue="") final String keyword,
+                                                       @RequestParam(value="sort", required=false, defaultValue = "byDate") final String sort,
+                                                       @RequestParam(value="orderBy", required=false, defaultValue="") final String orderBy) {
+        List<PhotoDto> photoDtos = photoService.getPhotoList(keyword, sort, orderBy);
+        return new ResponseEntity<>(photoDtos, HttpStatus.OK);
     }
 }

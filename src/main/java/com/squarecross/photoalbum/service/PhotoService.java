@@ -3,7 +3,9 @@ package com.squarecross.photoalbum.service;
 import com.squarecross.photoalbum.Constants;
 import com.squarecross.photoalbum.domain.Album;
 import com.squarecross.photoalbum.domain.Photo;
+import com.squarecross.photoalbum.dto.AlbumDto;
 import com.squarecross.photoalbum.dto.PhotoDto;
+import com.squarecross.photoalbum.mapper.AlbumMapper;
 import com.squarecross.photoalbum.mapper.PhotoMapper;
 import com.squarecross.photoalbum.repository.AlbumRepository;
 import com.squarecross.photoalbum.repository.PhotoRepository;
@@ -19,7 +21,10 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class PhotoService {
@@ -95,5 +100,26 @@ public class PhotoService {
         } catch (Exception e) {
             throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
         }
+    }
+    public List<PhotoDto> getPhotoList(String keyword, String sort, String orderBy) {
+        List<Photo> photos;
+        if (Objects.equals(sort, "byName")){
+            if (Objects.equals(orderBy, "desc")) {
+                photos = photoRepository.findByFileNameContainingOrderByFileNameDesc(keyword);
+            } else{
+                photos = photoRepository.findByFileNameContainingOrderByFileNameAsc(keyword);
+            }
+        } else if (Objects.equals(sort, "byDate")) {
+            if (Objects.equals(orderBy, "asc")){
+                photos = photoRepository.findByFileNameContainingOrderByUploadedAtAsc(keyword);
+            }
+            else{
+                photos = photoRepository.findByFileNameContainingOrderByUploadedAtDesc(keyword);
+            }
+        } else {
+            throw new IllegalArgumentException("알 수 없는 정렬 기준입니다");
+        }
+        List<PhotoDto> photoDtos = PhotoMapper.convertToDtoList(photos);
+        return photoDtos;
     }
 }
