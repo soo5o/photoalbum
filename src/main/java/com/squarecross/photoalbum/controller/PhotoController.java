@@ -1,5 +1,6 @@
 package com.squarecross.photoalbum.controller;
 
+import com.squarecross.photoalbum.dto.AlbumDto;
 import com.squarecross.photoalbum.dto.PhotoDto;
 import com.squarecross.photoalbum.service.PhotoService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -67,10 +68,16 @@ public class PhotoController {
         }
     }
     @RequestMapping(value="", method = RequestMethod.GET)
-    public ResponseEntity<List<PhotoDto>> getPhotoList(@RequestParam(value="keyword", required=false, defaultValue="") final String keyword,
+    public ResponseEntity<List<PhotoDto>> getPhotoList(@PathVariable final Long albumId,
+                                                       @RequestParam(value="keyword", required=false, defaultValue="") final String keyword,
                                                        @RequestParam(value="sort", required=false, defaultValue = "byDate") final String sort,
                                                        @RequestParam(value="orderBy", required=false, defaultValue="") final String orderBy) {
-        List<PhotoDto> photoDtos = photoService.getPhotoList(keyword, sort, orderBy);
+        List<PhotoDto> photoDtos = photoService.getPhotoList(albumId, keyword, sort, orderBy);
         return new ResponseEntity<>(photoDtos, HttpStatus.OK);
+    }
+    @RequestMapping(value="/{photoId}", method = RequestMethod.PUT)
+    public ResponseEntity<PhotoDto> updateAlbumId(@PathVariable final Long photoId, @RequestBody final PhotoDto photoDto){
+        PhotoDto res = photoService.changeAlbum(photoId, photoDto);
+        return new ResponseEntity<>(res, HttpStatus.OK);
     }
 }
