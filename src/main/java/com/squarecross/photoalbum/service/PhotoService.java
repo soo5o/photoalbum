@@ -19,9 +19,12 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -89,7 +92,6 @@ public class PhotoService {
         try {
             String filePath = AlbumId + "/" + fileName;
             Files.copy(file.getInputStream(), Paths.get(original_path + "/" + filePath));
-
             BufferedImage thumbImg = Scalr.resize(ImageIO.read(file.getInputStream()), Constants.THUMB_SIZE, Constants.THUMB_SIZE);
             File thumbFile = new File(thumb_path + "/" + filePath);
             String ext = StringUtils.getFilenameExtension(fileName);
@@ -101,25 +103,63 @@ public class PhotoService {
             throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
         }
     }
-    public List<PhotoDto> getPhotoList(String keyword, String sort, String orderBy) {
+    public List<PhotoDto> getPhotoList(Long albumId, String keyword, String sort, String orderBy) {
         List<Photo> photos;
         if (Objects.equals(sort, "byName")){
             if (Objects.equals(orderBy, "desc")) {
-                photos = photoRepository.findByFileNameContainingOrderByFileNameDesc(keyword);
+                photos = photoRepository.findByFileNameContainingAndAlbum_AlbumIdOrderByFileNameDesc(keyword, albumId);
             } else{
-                photos = photoRepository.findByFileNameContainingOrderByFileNameAsc(keyword);
+                photos = photoRepository.findByFileNameContainingAndAlbum_AlbumIdOrderByFileNameAsc(keyword, albumId);
             }
         } else if (Objects.equals(sort, "byDate")) {
             if (Objects.equals(orderBy, "asc")){
-                photos = photoRepository.findByFileNameContainingOrderByUploadedAtAsc(keyword);
+                photos = photoRepository.findByFileNameContainingAndAlbum_AlbumIdOrderByUploadedAtAsc(keyword, albumId);
             }
             else{
-                photos = photoRepository.findByFileNameContainingOrderByUploadedAtDesc(keyword);
+                photos = photoRepository.findByFileNameContainingAndAlbum_AlbumIdOrderByUploadedAtDesc(keyword, albumId);
             }
         } else {
             throw new IllegalArgumentException("알 수 없는 정렬 기준입니다");
         }
         List<PhotoDto> photoDtos = PhotoMapper.convertToDtoList(photos);
         return photoDtos;
+    }
+    public PhotoDto changePhoto(Long photoId, PhotoDto photoDto){
+        Optional<Photo> photo = photoRepository.findById(photoId);
+        if (photo.isEmpty()){
+            throw new NoSuchElementException(String.format("Photo ID '%d'가 존재하지 않습니다", photoId));
+        }
+        Photo updatePhoto = photo.get();
+        moveFile(updatePhoto.getAlbum().getAlbumId(), photoDto.getAlbumId(),updatePhoto.getFileName());
+        Optional<Album> res = albumRepository.findById(photoDto.getAlbumId());
+        updatePhoto.setAlbum(res.get());
+        Photo changedAlbum = photoRepository.save(updatePhoto);
+        return PhotoMapper.convertToDto(changedAlbum);
+    }
+    private void moveFile(Long albumId, Long targetAlbumId, String fileName){
+        try {
+            String filePath = albumId + "/" + fileName;
+            String targetFilePath = targetAlbumId + "/" + fileName;
+            Files.move(Paths.get(original_path + "/" + filePath), Paths.get(original_path + "/" + targetFilePath), StandardCopyOption.REPLACE_EXISTING);
+            Files.move(Paths.get(thumb_path + "/" + filePath), Paths.get(thumb_path + "/" + targetFilePath), StandardCopyOption.REPLACE_EXISTING);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Could not move the file. Error: " + e.getMessage());
+        }
+    }
+    public void deletePhoto(Long albumId, Long photoId) {
+        Optional<Photo> photo = photoRepository.findById(photoId);
+        if (photo.isEmpty()){
+            throw new NoSuchElementException(String.format("Photo ID '%d'가 존재하지 않습니다", photoId));
+        }
+        Photo deletePhoto = photo.get();
+        photoRepository.deleteById(photoId);
+        try {
+            String filePath = albumId + "/" + deletePhoto.getFileName();
+            Files.deleteIfExists(Paths.get(original_path + "/" + filePath));
+            Files.deleteIfExists(Paths.get(thumb_path + "/" + filePath));
+        } catch (IOException e) {
+            throw new RuntimeException("Could not delete the file. Error: " + e.getMessage());
+        }
     }
 }
