@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -123,7 +124,7 @@ public class PhotoService {
         List<PhotoDto> photoDtos = PhotoMapper.convertToDtoList(photos);
         return photoDtos;
     }
-    public PhotoDto changeAlbum(Long photoId, PhotoDto photoDto){
+    public PhotoDto changePhoto(Long photoId, PhotoDto photoDto){
         Optional<Photo> photo = photoRepository.findById(photoId);
         if (photo.isEmpty()){
             throw new NoSuchElementException(String.format("Photo ID '%d'가 존재하지 않습니다", photoId));
@@ -135,15 +136,30 @@ public class PhotoService {
         Photo changedAlbum = photoRepository.save(updatePhoto);
         return PhotoMapper.convertToDto(changedAlbum);
     }
-    private void moveFile(Long AlbumId, Long targetAlbumId, String fileName){
+    private void moveFile(Long albumId, Long targetAlbumId, String fileName){
         try {
-            String filePath = AlbumId + "/" + fileName;
+            String filePath = albumId + "/" + fileName;
             String targetFilePath = targetAlbumId + "/" + fileName;
             Files.move(Paths.get(original_path + "/" + filePath), Paths.get(original_path + "/" + targetFilePath), StandardCopyOption.REPLACE_EXISTING);
             Files.move(Paths.get(thumb_path + "/" + filePath), Paths.get(thumb_path + "/" + targetFilePath), StandardCopyOption.REPLACE_EXISTING);
 
         } catch (Exception e) {
             throw new RuntimeException("Could not move the file. Error: " + e.getMessage());
+        }
+    }
+    public void deletePhoto(Long albumId, Long photoId) {
+        Optional<Photo> photo = photoRepository.findById(photoId);
+        if (photo.isEmpty()){
+            throw new NoSuchElementException(String.format("Photo ID '%d'가 존재하지 않습니다", photoId));
+        }
+        Photo deletePhoto = photo.get();
+        photoRepository.deleteById(photoId);
+        try {
+            String filePath = albumId + "/" + deletePhoto.getFileName();
+            Files.deleteIfExists(Paths.get(original_path + "/" + filePath));
+            Files.deleteIfExists(Paths.get(thumb_path + "/" + filePath));
+        } catch (IOException e) {
+            throw new RuntimeException("Could not delete the file. Error: " + e.getMessage());
         }
     }
 }

@@ -77,7 +77,12 @@ public class PhotoController {
     }
     @RequestMapping(value="/{photoId}", method = RequestMethod.PUT)
     public ResponseEntity<PhotoDto> updateAlbumId(@PathVariable final Long photoId, @RequestBody final PhotoDto photoDto){
-        PhotoDto res = photoService.changeAlbum(photoId, photoDto);
+        PhotoDto res = photoService.changePhoto(photoId, photoDto);
         return new ResponseEntity<>(res, HttpStatus.OK);
+    }
+    @RequestMapping(value="/{photoId}", method = RequestMethod.DELETE)
+    public ResponseEntity<Void> deletePhoto(@PathVariable("albumId") final long albumId, @PathVariable("photoId") final long photoId) throws IOException {
+        photoService.deletePhoto(albumId, photoId);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
